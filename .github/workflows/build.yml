@@ -1,0 +1,59 @@
+name: Build MoneyUI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.2.1
+
+      - name: Assemble project from repo files
+        run: |
+          find . -type f -not -path "./.git/*" | sort
+          mkdir -p proj/src/main/java/com/vyn/moneyui proj/src/main/resources
+          pick() { find . -type f -name "$1" -not -path "./.git/*" -not -path "./proj/*" | head -n 1; }
+          need() {
+            p=$(pick "$1")
+            if [ -z "$p" ]; then echo "ERROR: $1 is missing from the repo"; exit 1; fi
+            mkdir -p "$(dirname "$2")"
+            cp "$p" "$2"
+          }
+          need build.gradle proj/build.gradle
+          need settings.gradle proj/settings.gradle
+          need gradle.properties proj/gradle.properties
+          need Money.java proj/src/main/java/com/vyn/moneyui/Money.java
+          need MoneyUIClient.java proj/src/main/java/com/vyn/moneyui/MoneyUIClient.java
+          if [ -n "$(pick fabric.mod.json)" ]; then
+            need fabric.mod.json proj/src/main/resources/fabric.mod.json
+          else
+            need fabric_mod.json proj/src/main/resources/fabric.mod.json
+          fi
+
+      - name: Build the mod
+        working-directory: proj
+        run: gradle build
+
+      - name: Verify the jar has the mod inside
+        working-directory: proj
+        run: |
+          JAR=build/libs/moneyui-1.0.0.jar
+          unzip -l "$JAR"
+          unzip -l "$JAR" | grep -q "fabric.mod.json" || { echo "ERROR: fabric.mod.json missing"; exit 1; }
+          unzip -l "$JAR" | grep -q "MoneyUIClient.class" || { echo "ERROR: mod code missing"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moneyui-jar
+          path: proj/build/libs/moneyui-1.0.0.jar
