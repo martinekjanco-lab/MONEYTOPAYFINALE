@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "moneyui",
+  "version": "${version}",
+  "name": "MoneyUI",
+  "description": "Money HUD with /ui, /setmoney, /pay and /paytoggle.",
+  "authors": ["you"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.vyn.moneyui.MoneyUIClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
